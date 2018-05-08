@@ -1,6 +1,6 @@
 {
   "name": "@greenrenge/logger",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "wrapper module for winston and debug",
   "main": "index.js",
   "scripts": {
@@ -17,9 +17,9 @@
   "author": "Sorasak S.",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Greenrenge/grn-logger/issues"
+    "url": "https://github.com/Greenrenge/logger/issues"
   },
-  "homepage": "https://github.com/Greenrenge/grn-logger#readme",
+  "homepage": "https://github.com/Greenrenge/logger#readme",
   "dependencies": {
     "debug": "^3.1.0",
     "winston": "^2.4.2"
