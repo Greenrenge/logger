@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Greenrenge/logger.git"
+    "url": "git+https://github.com/Greenrenge/grn-logger.git"
   },
   "keywords": [
     "log",
