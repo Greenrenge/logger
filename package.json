@@ -1,7 +1,7 @@
 {
-  "name": "grn-logger",
+  "name": "@greenrenge/logger",
   "version": "1.0.0",
-  "description": "greenrenge logger styles, wrapper for winston and debug",
+  "description": "wrapper module for winston and debug",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
