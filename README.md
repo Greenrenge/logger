@@ -1,10 +1,25 @@
 # Greenrenge Logger
 Example 
 ```
-const logger = require(grn-logger)('test:example')
+const logger = require(@greenrenge/logger)('test:example')
 logger.info('this is an info')
 logger.error('this is an error)
 logger.log('debug','this is an debug)
+```
+
+## In case of winston injection setting
+```
+var logger = new winston.Logger({
+  transports: [
+    new winston.transports.Console({
+      name: 'console.info',
+      level: 'info',
+      timestamp: true,
+      colorize: true
+    })
+  ]
+})
+const logger = require(@greenrenge/logger).getLog(logger)('this_is_my_winston_transport')
 ```
 
 ## Log under the hood depends on which NODE_ENV currently run on.
