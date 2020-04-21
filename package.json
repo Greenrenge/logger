@@ -4,7 +4,9 @@
   "description": "wrapper module for winston and debug",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node_modules/.bin/mocha 'test/**/*.test.js' --require ./test/setup.js",
+    "lint": "eslint .",
+    "lint:fix": "npm run lint -- --fix"
   },
   "repository": {
     "type": "git",
@@ -22,6 +24,35 @@
   "homepage": "https://github.com/Greenrenge/logger#readme",
   "dependencies": {
     "debug": "^3.1.0",
+    "fs-extra": "^9.0.0",
     "winston": "^2.4.2"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "git add"
+    ]
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-import": "^2.20.0",
+    "eslint-plugin-mocha": "^6.2.2",
+    "eslint-plugin-prettier": "^3.1.2",
+    "lint-staged": "^10.0.3",
+    "mocha": "^7.0.1",
+    "mongoose": "5.2.10",
+    "prettier": "^1.19.1",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "chaid": "^1.0.2",
+    "sinon-chai": "^3.5.0",
+    "std-mocks": "^1.0.1"
   }
 }
