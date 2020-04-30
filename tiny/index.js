@@ -1,14 +1,12 @@
 const debug = require("debug")
 const fs = require("fs-extra")
-const { loggerPath, winstonLogger } = require("./winston")
+
+const { loggerPath, createWinston } = require("./create-winston")
 
 function getLog(inputWinston) {
-  let winston = inputWinston
-  let createLogFolder = false
-  if (!winston) {
-    winston = winstonLogger
-    createLogFolder = true
-  }
+  const winston = inputWinston || createWinston()
+  let createLogFolder = !!inputWinston
+
   let createLogForFile
   const skips = []
   const names = []
@@ -63,7 +61,6 @@ function getLog(inputWinston) {
     // if debug has been set, we will filter namespaces for debugging
     init(process.env.DEBUG)
   }
-
   if (process.env.NODE_ENV === "production") {
     // log is winston
     createLogForFile = name => {
@@ -99,15 +96,24 @@ function getLog(inputWinston) {
   } else {
     // put all to debug, note that DEBUG filters all levels
     createLogForFile = name => {
-      const log = debug(name)
+      const logger = debug(name)
+      logger.enabled = true
+      let debugCall
+      if (!isEnabled(name)) {
+        debugCall = () => {}
+      } else {
+        debugCall = (...msgs) => logger("[DEBUG] : ", ...msgs)
+      }
       return {
-        log: (level, ...msgs) => log(`[${level.toUpperCase()}] : `, ...msgs),
-        silly: (...msgs) => log("[SILLY] : ", ...msgs),
-        debug: (...msgs) => log("[DEBUG] : ", ...msgs),
-        verbose: (...msgs) => log("[VERBOSE] : ", ...msgs),
-        info: (...msgs) => log("[INFO] : ", ...msgs),
-        warn: (...msgs) => log("[WARN] : ", ...msgs),
-        error: (...msgs) => log("[ERROR] : ", ...msgs),
+        log: (level, ...msgs) => {
+          logger(`[${level.toUpperCase()}] : `, ...msgs)
+        },
+        silly: (...msgs) => logger("[SILLY] : ", ...msgs),
+        debug: debugCall,
+        verbose: (...msgs) => logger("[VERBOSE] : ", ...msgs),
+        info: (...msgs) => logger("[INFO] : ", ...msgs),
+        warn: (...msgs) => logger("[WARN] : ", ...msgs),
+        error: (...msgs) => logger("[ERROR] : ", ...msgs),
       }
     }
   }

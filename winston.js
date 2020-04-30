@@ -1,17 +1,55 @@
 const winston = require("winston")
 const dailyRotateFile = require("winston-daily-rotate-file")
-const fs = require("fs")
+const fs = require("fs-extra")
 const defaultConfig = require("./config")
 
 winston.transports.DailyRotateFile = dailyRotateFile
 
+function ensureFolderCreated(dir) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirpSync(dir)
+  }
+}
+
+function _parseObject(message) {
+  return JSON.stringify(message)
+}
+
+function _parseRequest({ body, query, params }) {
+  const info = {
+    body,
+    query,
+    params,
+  }
+  return { requestInfo: JSON.stringify(info) }
+}
+function _parse(log) {
+  return log.map(element => {
+    if (typeof element === "object") {
+      const obj = {}
+      // iterate check object all key then convert to json.stringify
+      Object.keys(element).forEach(k => {
+        // parse body, query, params from req
+        if (k === "req" && element[k] && typeof element[k] === "object") {
+          obj.req = _parseRequest(element.req)
+        } else {
+          // convert another object
+          obj[k] = _parseObject(element[k])
+        }
+      })
+      return obj
+    }
+    // if string then return
+    return element
+  })
+}
 class Logger {
   constructor(config) {
     this.levels = ["error", "warn", "info", "verbose", "debug", "silly"]
     this.logLevel = "debug"
     this.config = config
     if (this.config.enableLogFile) {
-      fs.existsSync(config.logDirectory) || fs.mkdirSync(config.logDirectory)
+      ensureFolderCreated(config.logDirectory)
     }
     this.logger = {
       error: this.initialize("error"),
@@ -120,30 +158,30 @@ class Logger {
   log(...log) {
     let level = "info"
     if (this._checkLevel(log[0])) {
-      level = log[0]
+      ;[level] = log
     } else {
       log.unshift("info")
     }
     let message = null
     switch (level) {
       case "error":
-        message = this._parse(log)
+        message = _parse(log)
         this.logger.error.log(...message)
         break
       case "warn":
-        message = this._parse(log)
+        message = _parse(log)
         this.logger.warn.log(...message)
         break
       case "info":
-        message = this._parse(log)
+        message = _parse(log)
         this.logger.info.log(...message)
         break
       case "verbose":
-        message = this._parse(log)
+        message = _parse(log)
         this.logger.verbose.log(...message)
         break
       case "debug":
-        message = this._parse(log)
+        message = _parse(log)
         this.logger.debug.log(...message)
         break
       default:
@@ -152,62 +190,28 @@ class Logger {
   }
 
   error(...log) {
-    const message = this._parse(log)
+    const message = _parse(log)
     this.logger.error.log("error", ...message)
   }
 
   warn(...log) {
-    const message = this._parse(log)
+    const message = _parse(log)
     this.logger.warn.log("warn", ...message)
   }
 
   info(...log) {
-    const message = this._parse(log)
+    const message = _parse(log)
     this.logger.info.log("info", ...message)
   }
 
   verbose(...log) {
-    const message = this._parse(log)
+    const message = _parse(log)
     this.logger.verbose.log("verbose", ...message)
   }
 
   debug(...log) {
-    const message = this._parse(log)
+    const message = _parse(log)
     this.logger.debug.log("debug", ...message)
-  }
-
-  _parse(log) {
-    return log.map(element => {
-      if (typeof element === "object") {
-        const obj = {}
-        // iterate check object all key then convert to json.stringify
-        Object.keys(element).forEach(k => {
-          // parse body, query, params from req
-          if (k === "req" && element[k] && typeof element[k] === "object") {
-            obj.req = this._parseRequest(element.req)
-          } else {
-            // convert another object
-            obj[k] = this._parseObject(element[k])
-          }
-        })
-        return obj
-      }
-      // if string then return
-      return element
-    })
-  }
-
-  _parseObject(message) {
-    return JSON.stringify(message)
-  }
-
-  _parseRequest({ body, query, params }) {
-    const info = {
-      body,
-      query,
-      params,
-    }
-    return { requestInfo: JSON.stringify(info) }
   }
 }
 

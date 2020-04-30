@@ -1,7 +1,9 @@
 const stdMocks = require("std-mocks")
 const sinon = require("sinon")
+const mockedEnv = require("mocked-env")
+const createLogger = require("../../tiny/index")
 
-describe("Logger", () => {
+describe("Tiny Logger", () => {
   let now
   let clock
   beforeEach(() => {
@@ -11,224 +13,74 @@ describe("Logger", () => {
   afterEach(() => {
     clock.restore()
   })
-  context("#wrapper logger", () => {
-    it("should be able to call logger.error() to log to stdout", () => {
-      stdMocks.use()
-      logger.error("hello error", "param2")
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(`${now} [ERROR]: hello error, param2\n`)
-    })
-    it("should be able to call logger.warn() to log to stdout", () => {
-      stdMocks.use()
-      logger.warn("hello warn", "param2")
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(`${now} [WARN]: hello warn, param2\n`)
-    })
-    it("should be able to call logger.info() to log to stdout", () => {
-      stdMocks.use()
-      logger.info("hello info", "param2")
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(`${now} [INFO]: hello info, param2\n`)
-    })
-    it("should be able to call logger.verbose() to log to stdout", () => {
-      stdMocks.use()
-      logger.verbose("hello verbose", "param2")
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(`${now} [VERBOSE]: hello verbose, param2\n`)
-    })
-    it("should be able to call logger.debug() to log to stdout", () => {
-      stdMocks.use()
-      logger.debug("hello debug", "param2")
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(`${now} [DEBUG]: hello debug, param2\n`)
-    })
-    it("should be able to call logger.silly() to log to stdout", () => {
-      stdMocks.use()
-      logger.silly("hello silly", "param2")
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(`${now} [SILLY]: hello silly, param2\n`)
-    })
-    it("should be able to call logger.log() to log to stdout", () => {
-      stdMocks.use()
-      logger.log("debug", "hello log.(debug)", "param2")
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(
-        `${now} [DEBUG]: hello log.(debug), param2\n`,
+  context("not production", () => {
+    it("should use debug to be a logger", () => {
+      const { log, debug, info, error, silly, verbose, warn } = createLogger(
+        "debug001",
       )
-    })
-    it("should not log if level is incorrect when calls logger.log()", () => {
       stdMocks.use()
-      logger.log("wrong", "hello log.(debug)", "param2")
+      log("info", "any will not go to std out")
+      info("any will not go to std out")
+      debug("any will not go to std out")
+      error("any will not go to std out")
+      silly("any will not go to std out")
+      verbose("any will not go to std out")
+      warn("any will not go to std out")
       stdMocks.restore()
       const output = stdMocks.flush()
-      should().equal(output.stdout[0], undefined)
+      output.stdout.should.have.lengthOf(0)
+      output.stderr.should.have.lengthOf(6)
+      output.stderr.should.deep.equal([
+        "  \u001b[38;5;196;1mdebug001 \u001b[0m[INFO] :  any will not go to std out \u001b[38;5;196m+0ms\u001b[0m\n",
+        "  \u001b[38;5;196;1mdebug001 \u001b[0m[INFO] :  any will not go to std out \u001b[38;5;196m+0ms\u001b[0m\n",
+        "  \u001b[38;5;196;1mdebug001 \u001b[0m[ERROR] :  any will not go to std out \u001b[38;5;196m+0ms\u001b[0m\n",
+        "  \u001b[38;5;196;1mdebug001 \u001b[0m[SILLY] :  any will not go to std out \u001b[38;5;196m+0ms\u001b[0m\n",
+        "  \u001b[38;5;196;1mdebug001 \u001b[0m[VERBOSE] :  any will not go to std out \u001b[38;5;196m+0ms\u001b[0m\n",
+        "  \u001b[38;5;196;1mdebug001 \u001b[0m[WARN] :  any will not go to std out \u001b[38;5;196m+0ms\u001b[0m\n",
+      ])
     })
   })
-  context("#log with default format", () => {
-    it("should be able to log with timestamp", () => {
-      stdMocks.use()
-      logger.info("hello info")
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(`${now} [INFO]: hello info\n`)
+  context("production", () => {
+    let restore
+    before(() => {
+      restore = mockedEnv({
+        NODE_ENV: "production",
+        debug: "fileA,*fileB*",
+      })
     })
-    it("should be able to log with string interpolation", () => {
-      stdMocks.use()
-      logger.info("hello %s", "hola")
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(`${now} [INFO]: hello hola\n`)
+
+    after(() => {
+      restore()
     })
-    it("should be able to log with two string interpolations", () => {
+    it("should use winston to be a logger", () => {
+      const {
+        log,
+        debug,
+        info,
+        error,
+        silly,
+        verbose,
+        warn,
+      } = createLogger.getLog()("fileC")
       stdMocks.use()
-      logger.info("hello %s %s", "hola", "people")
+      const txt = "logs line"
+      log("info", txt)
+      info(txt)
+      debug(txt) // not out
+      error(txt)
+      silly(txt)
+      verbose(txt)
+      warn(txt)
       stdMocks.restore()
       const output = stdMocks.flush()
-      output.stdout[0].should.equal(`${now} [INFO]: hello hola people\n`)
-    })
-    it("should be able to log with object", () => {
-      const obj = { _id: "21344325", name: "John Doe" }
-      stdMocks.use()
-      logger.info(obj)
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      const stringifiedObj = stringifyLog(obj)
-      output.stdout[0].should.equal(`${now} [INFO]: ${stringifiedObj}\n`)
-    })
-    it("should be able to log string with object", () => {
-      const obj = { _id: "21344325", name: "John Doe" }
-      stdMocks.use()
-      logger.error("user Object = %o", obj)
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(
-        `${now} [ERROR]: user Object = { _id: '21344325', name: 'John Doe' }\n`,
-      )
-    })
-    it("should be able to log string with object without interpolation", () => {
-      const obj = { _id: "21344325", name: "John Doe" }
-      const stringifiedObj = stringifyLog(obj)
-      stdMocks.use()
-      logger.error("user Object", obj)
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(
-        `${now} [ERROR]: user Object, ${stringifiedObj}\n`,
-      )
-    })
-    it("should be able to log string with two objects without interpolation", () => {
-      const obj = { _id: "21344325", name: "John Doe" }
-      const obj2 = { _id: "3433", name: "Bob Doe" }
-      const stringifiedObj = stringifyLog(obj)
-      const stringifiedObj2 = stringifyLog(obj2)
-      stdMocks.use()
-      logger.error("user Object", obj, obj2)
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(
-        `${now} [ERROR]: user Object, ${stringifiedObj}, ${stringifiedObj2}\n`,
-      )
-    })
-    it("should be able to log string with object with interpolation and without interpolation", () => {
-      const obj = { _id: "21344325", name: "John Doe" }
-      const obj2 = { _id: "3433", name: "Bob Doe" }
-      const stringifiedObj2 = stringifyLog(obj2)
-      stdMocks.use()
-      logger.error("user Object = %o", obj, obj2)
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(
-        `${now} [ERROR]: user Object = { _id: '21344325', name: 'John Doe' }, ${stringifiedObj2}\n`,
-      )
-    })
-  })
-  context("#log with json format", () => {
-    const jsonLogger = Logger({ logLevel: "silly", logFormat: "json" })
-    it("should be able to log with timestamp", () => {
-      stdMocks.use()
-      jsonLogger.info("hello info")
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(
-        '{"message":"hello info","level":"info","severity":"info"}\n',
-      )
-    })
-    it("should be able to log with string interpolation", () => {
-      stdMocks.use()
-      jsonLogger.info("hello %s", "hola")
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(
-        '{"level":"info","message":"hello hola","severity":"info"}\n',
-      )
-    })
-    it("should be able to log with two string interpolations", () => {
-      stdMocks.use()
-      jsonLogger.info("hello %s %s", "hola", "people")
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(
-        '{"level":"info","message":"hello hola people","severity":"info"}\n',
-      )
-    })
-    it("should be able to log with object", () => {
-      const obj = { _id: "21344325", name: "John Doe" }
-      stdMocks.use()
-      jsonLogger.info(obj)
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(
-        '{"message":{"_id":"21344325","name":"John Doe"},"level":"info","severity":"info"}\n',
-      )
-    })
-    it("should be able to log string with object", () => {
-      const obj = { _id: "21344325", name: "John Doe" }
-      stdMocks.use()
-      jsonLogger.error("user Object = %o", obj)
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(
-        '{"_id":"21344325","name":"John Doe","level":"error","message":"user Object = { _id: \'21344325\', name: \'John Doe\' }","severity":"ERROR"}\n',
-      )
-    })
-    it("should be able to log string with object without interpolation", () => {
-      const obj = { _id: "21344325", name: "John Doe" }
-      stdMocks.use()
-      jsonLogger.error("user Object", obj)
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(
-        '{"_id":"21344325","name":"John Doe","level":"error","message":"user Object","meta":{"_id":"21344325","name":"John Doe"},"severity":"ERROR"}\n',
-      )
-    })
-    it("should be able to log string with two objects without interpolation", () => {
-      const obj = { _id: "21344325", name: "John Doe" }
-      const obj2 = { _id: "3433", name: "Bob Doe" }
-      stdMocks.use()
-      jsonLogger.error("user Object", obj, obj2)
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(
-        '{"_id":"21344325","name":"John Doe","level":"error","message":"user Object","meta":[{"_id":"21344325","name":"John Doe"},{"_id":"3433","name":"Bob Doe"}],"severity":"ERROR"}\n',
-      )
-    })
-    it("should be able to log string with object with interpolation and without interpolation", () => {
-      const obj = { _id: "21344325", name: "John Doe" }
-      const obj2 = { _id: "3433", name: "Bob Doe" }
-      stdMocks.use()
-      jsonLogger.error("user Object = %o", obj, obj2)
-      stdMocks.restore()
-      const output = stdMocks.flush()
-      output.stdout[0].should.equal(
-        '{"_id":"21344325","name":"John Doe","level":"error","message":"user Object = { _id: \'21344325\', name: \'John Doe\' }","meta":{"_id":"3433","name":"Bob Doe"},"severity":"ERROR"}\n',
-      )
+      output.stdout.should.have.lengthOf(4)
+      output.stderr.should.have.lengthOf(0)
+      output.stdout.should.deep.equal([
+        "2020-01-28T10:38:33.000Z [INFO] [fileC] : \n",
+        "2020-01-28T10:38:33.000Z [INFO] [fileC] : \n",
+        "2020-01-28T10:38:33.000Z [ERROR] [fileC] : \n",
+        "2020-01-28T10:38:33.000Z [WARN] [fileC] : \n",
+      ])
     })
   })
 })

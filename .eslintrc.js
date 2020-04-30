@@ -15,8 +15,9 @@ module.exports = {
     es6: true,
   },
   rules: {
+    "no-underscore-dangle": "off",
     "prettier/prettier": [2, prettierOptions],
-    "no-console": "error",
+    "no-console": "off",
     "func-names": ["error", "never"],
     quotes: ["error", "double"],
     semi: ["error", "never"],
