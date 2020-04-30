@@ -37,6 +37,7 @@ const createWinston = (
       logFile &&
         new transports.File({
           filename: "exceptions.log",
+          dirname: loggerPath,
           json: false,
           maxsize: 10485760,
           maxFiles: 3,
